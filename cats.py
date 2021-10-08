@@ -1226,16 +1226,19 @@ class AMP(CATS):
         self.api_key       = api_key
         self.api_url = "https://api.amp.cisco.com"
         if cloud=="eu":
-            self.api_url ="https://api.eu.cisco.com"
+            self.api_url ="https://api.eu.amp.cisco.com"
         if cloud=="apjc":
-            self.api_url ="https://api.apjc.cisco.com"
+            self.api_url ="https://api.apjc.amp.cisco.com"
 
     def apirequest(self,apicall):
     
         headers = {"ACCEPT":"application/json","Content-Type":"application/json","Authorization":""}
         bencode = base64.b64encode((self.api_client_id + ":" + self.api_key).encode())
         headers["Authorization"] = "Basic " + bencode.decode()
-        url = self.api_url + apicall
+        if apicall.startswith("https://"):
+            url = apicall
+        else:
+            url = self.api_url + apicall
         
         return(self.get(url=url,headers=headers,verify=False))
 
@@ -1294,6 +1297,21 @@ class AMP(CATS):
         api_call = api_call + "?" + querystring
         rsp = self.apirequest(api_call)
         return rsp
+
+    def getALLcomputers(self,first=False):
+        api_call = "/v1/computers/"
+        if first:
+            rsp = self.apirequest(api_call)
+        else:
+            rsp = self.apirequest(self.next_url)
+
+        if 'next' in rsp['metadata']['links']:
+            self.next_url = rsp['metadata']['links']['next']
+            more = True
+        else:
+            more = False
+        return (more,rsp)
+
 
     def computerGUID(self,guid):
 
